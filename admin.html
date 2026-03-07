@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TransWord — Puzzle Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+  <header>
+    <h1>TransWord <span class="badge">Maintainer</span></h1>
+    <p class="subtitle">
+      Puzzle generator &amp; graph explorer &mdash; analyse the corpus, generate pairs, test solutions.
+    </p>
+  </header>
+
+  <div id="log"></div>
+
+  <div id="controls" class="hidden">
+
+    <section class="panel">
+      <h2>Analyse Graph</h2>
+      <p class="hint">Sample BFS from random seeds to see connectivity, components, and distance distribution.</p>
+      <div class="row">
+        <label>Sample size <input type="number" id="sample-size" value="300" min="10" max="2000"></label>
+        <button id="analyse-btn">Analyse</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Generate Puzzle Pairs</h2>
+      <p class="hint">Find start→end pairs with a known optimal step count. Results include the shortest path.</p>
+      <div class="row">
+        <label>Min steps <input type="number" id="min-steps" value="3" min="1" max="20"></label>
+        <label>Max steps <input type="number" id="max-steps" value="6" min="1" max="30"></label>
+        <label>Count <input type="number" id="pair-count" value="20" min="1" max="200"></label>
+        <button id="generate-btn">Generate</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Solve a Pair</h2>
+      <p class="hint">Find the shortest transformation between any two words in the corpus.</p>
+      <div class="row">
+        <label>Start <input type="text" id="start-word" placeholder="e.g. cold"></label>
+        <label>End <input type="text" id="end-word" placeholder="e.g. warm"></label>
+        <button id="solve-btn">Solve</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Export Puzzles</h2>
+      <p class="hint">Generate a batch of puzzles and download as JSON for use in the game.</p>
+      <div class="row">
+        <label>Easy (2-3) <input type="number" id="exp-easy" value="10" min="0" max="100"></label>
+        <label>Medium (4-5) <input type="number" id="exp-medium" value="10" min="0" max="100"></label>
+        <label>Hard (6-8) <input type="number" id="exp-hard" value="10" min="0" max="100"></label>
+        <button id="export-btn">Export JSON</button>
+      </div>
+    </section>
+
+  </div>
+
+  <div id="results"></div>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

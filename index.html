@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TransWord</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Loading overlay -->
+  <div id="loading">
+    <div class="loader-content">
+      <div class="spinner"></div>
+      <p id="loading-msg">Loading corpus…</p>
+    </div>
+  </div>
+
+  <!-- Game screen -->
+  <div id="game" class="hidden">
+
+    <header id="header">
+      <div class="header-left">
+        <h1>TransWord</h1>
+      </div>
+      <div class="header-center">
+        <div class="target-label">Target</div>
+        <div id="target-word" class="target-word"></div>
+      </div>
+      <div class="header-right">
+        <div class="stat">
+          <span class="stat-label">Time</span>
+          <span id="timer" class="stat-value">0:00</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Steps</span>
+          <span id="step-count" class="stat-value">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Optimal</span>
+          <span id="optimal-count" class="stat-value">–</span>
+        </div>
+      </div>
+    </header>
+
+    <div id="chain-container">
+      <div id="chain"></div>
+    </div>
+
+    <footer id="toolbar">
+      <button id="new-btn">New Puzzle</button>
+      <div class="difficulty-pick">
+        <label>Difficulty
+          <select id="difficulty">
+            <option value="3">Easy (3)</option>
+            <option value="4" selected>Medium (4–5)</option>
+            <option value="6">Hard (6–8)</option>
+          </select>
+        </label>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Win overlay -->
+  <div id="win-overlay" class="hidden">
+    <div class="win-card">
+      <div class="win-title">Solved!</div>
+      <div class="win-stats">
+        <div class="win-stat"><span class="win-num" id="win-steps">0</span><span class="win-label">steps</span></div>
+        <div class="win-stat"><span class="win-num" id="win-optimal">0</span><span class="win-label">optimal</span></div>
+        <div class="win-stat"><span class="win-num" id="win-time">0:00</span><span class="win-label">time</span></div>
+      </div>
+      <div id="win-path" class="win-path"></div>
+      <button id="win-new-btn">New Puzzle</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
