@@ -351,6 +351,7 @@ h1 {
 #toolbar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.8rem;
   padding: 0.7rem 1.5rem;
   background: var(--surface);
@@ -382,8 +383,10 @@ button:disabled {
   cursor: default;
 }
 
-.difficulty-pick {
-  margin-left: auto;
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .difficulty-pick label {

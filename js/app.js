@@ -7,9 +7,11 @@ const $ = (sel) => document.querySelector(sel);
 /*  State                                                              */
 /* ================================================================== */
 
-let graph       = null;
-let puzzle      = null;   // { start, end, dist, path }
-let chain       = [];     // words the player has committed so far (includes start)
+let wordLevels  = new Map();  // word → 1|2|3
+let fullGraph   = null;       // all words — used for player validation
+let puzzleGraph = null;       // level-filtered — used for puzzle generation
+let puzzle      = null;       // { start, end, dist, path }
+let chain       = [];         // words the player has committed so far (includes start)
 let timerStart  = null;
 let timerHandle = null;
 let solved      = false;
@@ -28,25 +30,68 @@ const OP_LABELS = {
 async function loadCorpus() {
   const res  = await fetch('data/corpus_with_plurals.txt');
   const text = await res.text();
-  return text.trim().split(/\r?\n/).map(w => w.trim().toLowerCase()).filter(Boolean);
+  const entries = [];
+  for (const line of text.trim().split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const parts = trimmed.split('\t');
+    const word  = parts[0].toLowerCase();
+    const level = parseInt(parts[1], 10) || 1;
+    entries.push({ word, level });
+  }
+  return entries;
 }
+
+function selectedLevel() {
+  return parseInt($('#level-select').value, 10);
+}
+
+function buildGraphs(entries) {
+  const lvl = selectedLevel();
+  wordLevels = new Map();
+  const allWords = [];
+  const puzzleWords = [];
+
+  for (const { word, level } of entries) {
+    wordLevels.set(word, level);
+    allWords.push(word);
+    if (level <= lvl) puzzleWords.push(word);
+  }
+
+  fullGraph = new WordGraph(allWords);
+  fullGraph.build();
+
+  puzzleGraph = new WordGraph(puzzleWords);
+  puzzleGraph.build();
+}
+
+let corpusEntries = null;
 
 async function init() {
   setLoading('Loading corpus…');
-  const words = await loadCorpus();
-  setLoading(`Building graph (${words.length} words)…`);
+  corpusEntries = await loadCorpus();
+  setLoading(`Building graphs (${corpusEntries.length} words)…`);
 
   await nextFrame();
-  graph = new WordGraph(words);
-  graph.build();
+  buildGraphs(corpusEntries);
 
   hideLoading();
   $('#game').classList.remove('hidden');
 
   $('#new-btn').addEventListener('click', () => startNewPuzzle());
   $('#win-new-btn').addEventListener('click', () => { $('#win-overlay').classList.add('hidden'); startNewPuzzle(); });
+  $('#level-select').addEventListener('change', onLevelChange);
 
   startNewPuzzle();
+}
+
+function onLevelChange() {
+  showLoading('Rebuilding graph…');
+  requestAnimationFrame(() => {
+    buildGraphs(corpusEntries);
+    hideLoading();
+    startNewPuzzle();
+  });
 }
 
 /* ================================================================== */
@@ -62,10 +107,10 @@ function difficultyRange() {
 
 function startNewPuzzle() {
   const [min, max] = difficultyRange();
-  const puzzles = generatePuzzles(graph, { minSteps: min, maxSteps: max, count: 5, sampleSize: 500 });
+  const puzzles = generatePuzzles(puzzleGraph, { minSteps: min, maxSteps: max, count: 5, sampleSize: 500 });
 
   if (puzzles.length === 0) {
-    alert('Could not find a puzzle for this difficulty. Try another setting.');
+    alert('Could not find a puzzle for this difficulty / level. Try another setting.');
     return;
   }
 
@@ -193,7 +238,7 @@ function makeWordNode(word, isStart, isEnd, canUndo, prevWord) {
   if (isEnd)   slot.classList.add('end-word');
 
   if (prevWord) {
-    const op = graph.classifyOp(prevWord, word);
+    const op = fullGraph.classifyOp(prevWord, word);
     const letters = diffLetters(prevWord, word, op);
     for (const { char, cls } of letters) {
       const span = document.createElement('span');
@@ -228,7 +273,7 @@ function makeConnector(prev, cur) {
   conn.appendChild(line);
 
   if (prev && cur) {
-    const op = graph.classifyOp(prev, cur);
+    const op = fullGraph.classifyOp(prev, cur);
     if (op) {
       const badge = document.createElement('span');
       badge.className = `op-badge ${op}`;
@@ -287,12 +332,12 @@ function submitWord(word) {
     return;
   }
 
-  if (!graph.has(word)) {
+  if (!fullGraph.has(word)) {
     flashError(input, hint, 'Not in dictionary');
     return;
   }
 
-  const op = graph.classifyOp(prev, word);
+  const op = fullGraph.classifyOp(prev, word);
   if (!op) {
     flashError(input, hint, 'Not a valid single-step transform');
     return;
@@ -352,7 +397,7 @@ function showWin() {
   const pathEl = $('#win-path');
   pathEl.innerHTML = chain.map((w, i) => {
     if (i === 0) return `<strong>${w}</strong>`;
-    const op = graph.classifyOp(chain[i - 1], w);
+    const op = fullGraph.classifyOp(chain[i - 1], w);
     const badge = op ? `<span class="op-inline ${op}">${OP_LABELS[op] || op}</span>` : '';
     return ` → ${badge} <strong>${w}</strong>`;
   }).join('');
@@ -370,6 +415,13 @@ function scrollToBottom() {
 }
 
 function setLoading(msg) {
+  $('#loading-msg').textContent = msg;
+}
+
+function showLoading(msg) {
+  const el = $('#loading');
+  el.classList.remove('hidden', 'fade-out');
+  el.style.opacity = '1';
   $('#loading-msg').textContent = msg;
 }
 

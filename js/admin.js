@@ -24,9 +24,16 @@ let graph = null;
 /* ================================================================== */
 
 async function loadCorpus() {
-  const res  = await fetch('data/words_with_plurals.txt');
+  const res  = await fetch('data/corpus_with_plurals.txt');
   const text = await res.text();
-  return text.trim().split(/\r?\n/).map(w => w.trim().toLowerCase()).filter(Boolean);
+  const words = [];
+  for (const line of text.trim().split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const parts = trimmed.split('\t');
+    words.push(parts[0].toLowerCase());
+  }
+  return words;
 }
 
 async function init() {
