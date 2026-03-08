@@ -255,7 +255,7 @@ function makeWordNode(word, isStart, isEnd, canUndo, prevWord) {
   if (canUndo) {
     const x = document.createElement('button');
     x.className = 'undo-x';
-    x.textContent = '✕';
+    x.textContent = '↑';
     x.title = 'Remove this step';
     x.addEventListener('click', undo);
     wrap.appendChild(x);

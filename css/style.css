@@ -226,10 +226,10 @@ h1 {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--red);
+  background: var(--orange);
   border: 2px solid var(--bg);
-  color: #fff;
-  font-size: 0.7rem;
+  color: #000;
+  font-size: 0.8rem;
   font-weight: 700;
   line-height: 18px;
   text-align: center;
@@ -242,7 +242,7 @@ h1 {
 
 .undo-x:hover {
   transform: scale(1.2);
-  background: #d44;
+  background: #e0903a;
   border-color: var(--bg);
 }
 
