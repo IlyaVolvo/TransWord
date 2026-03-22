@@ -1,5 +1,5 @@
 import { WordGraph }      from './graph.js';
-import { shortestPath, generatePuzzles } from './solver.js';
+import { generatePuzzles } from './solver.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -15,6 +15,21 @@ let chain       = [];         // words the player has committed so far (includes
 let timerStart  = null;
 let timerHandle = null;
 let solved      = false;
+let currentLanguageDir = null;
+let currentLanguageConfig = null;
+let languageOptions = [];
+let corpusEntries = null;
+
+const DEFAULT_LAYOUT = [
+  ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+  ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+  ['z', 'x', 'c', 'v', 'b', 'n', 'm'],
+];
+
+const DEFAULT_ACTIONS = {
+  enter: { label: 'ENTER', position: 'start', row: 2 },
+  backspace: { label: '⌫', position: 'end', row: 2 },
+};
 
 const OP_LABELS = {
   substitute: 'replaced',
@@ -28,7 +43,9 @@ const OP_LABELS = {
 /* ================================================================== */
 
 async function loadCorpus() {
-  const res  = await fetch('data/corpus_with_plurals.txt');
+  if (!currentLanguageDir) throw new Error('Language is not selected');
+  const res  = await fetch(`data/languages/${currentLanguageDir}/corpus.txt`);
+  if (!res.ok) throw new Error(`Failed to load corpus for ${currentLanguageDir}`);
   const text = await res.text();
   const entries = [];
   for (const line of text.trim().split(/\r?\n/)) {
@@ -40,6 +57,112 @@ async function loadCorpus() {
     entries.push({ word, level });
   }
   return entries;
+}
+
+async function loadLanguageManifest() {
+  const isBlockedInGame = (cfg) => {
+    const raw = cfg?.blocked;
+    if (raw === true) return true;
+    if (raw === false || raw == null) return false;
+    const v = String(raw).trim().toLowerCase();
+    return v === 'yes' || v === 'true';
+  };
+
+  const verifyEntries = async (entries) => {
+    const out = [];
+    for (const entry of entries) {
+      const dir = entry?.dir;
+      if (!dir) continue;
+      try {
+        const [cfgRes, corpusRes] = await Promise.all([
+          fetch(`/data/languages/${dir}/language.json`, { cache: 'no-store' }),
+          fetch(`/data/languages/${dir}/corpus.txt`, { cache: 'no-store' }),
+        ]);
+        if (!cfgRes.ok || !corpusRes.ok) continue;
+        const cfg = await cfgRes.json();
+        if (isBlockedInGame(cfg)) continue;
+        const text = await corpusRes.text();
+        if (!text.trim()) continue;
+        out.push(entry);
+      } catch {
+        // skip invalid entry
+      }
+    }
+    return out;
+  };
+
+  const urls = ['/data/languages/index.json', 'data/languages/index.json'];
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) continue;
+      const list = await res.json();
+      if (Array.isArray(list) && list.length > 0) {
+        const filtered = list.filter((l) => Number(l.words || 0) > 0);
+        const verified = await verifyEntries(filtered);
+        if (verified.length > 0) return verified;
+      }
+    } catch {
+      // try fallback discovery
+    }
+  }
+
+  // Fallback for environments where index.json is not served.
+  const candidates = ['English', 'Spanish', 'French', 'Russian', 'Hebrew', 'Armenian', 'German'];
+  const discovered = [];
+  const fetchFirstOk = async (paths) => {
+    for (const p of paths) {
+      try {
+        const r = await fetch(p, { cache: 'no-store' });
+        if (r.ok) return r;
+      } catch {
+        // keep trying
+      }
+    }
+    return null;
+  };
+
+  for (const dir of candidates) {
+    try {
+      const [cfgRes, corpusRes] = await Promise.all([
+        fetchFirstOk([`/data/languages/${dir}/language.json`, `data/languages/${dir}/language.json`]),
+        fetchFirstOk([`/data/languages/${dir}/corpus.txt`, `data/languages/${dir}/corpus.txt`]),
+      ]);
+      if (!cfgRes || !corpusRes) continue;
+      const cfg = await cfgRes.json();
+      if (isBlockedInGame(cfg)) continue;
+      const corpusText = await corpusRes.text();
+      const words = corpusText.trim() ? corpusText.trim().split(/\r?\n/).length : 0;
+      if (words <= 0) continue;
+      discovered.push({
+        dir,
+        code: cfg.code || dir.slice(0, 2).toLowerCase(),
+        menu: cfg.menu || dir,
+        flag: cfg.flag || '',
+        words,
+      });
+    } catch {
+      // skip candidate
+    }
+  }
+  return discovered;
+}
+
+async function loadLanguageConfig(langDir) {
+  const res = await fetch(`data/languages/${langDir}/language.json`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Failed to load language config for ${langDir}`);
+  return res.json();
+}
+
+function normalizeForLanguage(word) {
+  if (!currentLanguageConfig || !currentLanguageConfig.normalization) return word;
+  let out = word;
+  for (const [group, base] of Object.entries(currentLanguageConfig.normalization)) {
+    for (const ch of group) {
+      out = out.split(ch).join(base);
+    }
+  }
+  return out;
 }
 
 function selectedLevel() {
@@ -65,24 +188,58 @@ function buildGraphs(entries) {
   puzzleGraph.build();
 }
 
-let corpusEntries = null;
-
 async function init() {
-  setLoading('Loading corpus…');
-  corpusEntries = await loadCorpus();
-  setLoading(`Building graphs (${corpusEntries.length} words)…`);
+  setLoading('Loading languages…');
+  languageOptions = await loadLanguageManifest();
+  if (languageOptions.length === 0) throw new Error('No languages found');
 
-  await nextFrame();
-  buildGraphs(corpusEntries);
+  populateLanguageSelect(languageOptions);
+  let saved = null;
+  try { saved = localStorage.getItem('tw_language_dir'); } catch {}
+  const picked = languageOptions.some((l) => l.dir === saved) ? saved : languageOptions[0].dir;
+  $('#language-select').value = picked;
 
-  hideLoading();
+  await switchLanguage(picked, false);
+
   $('#game').classList.remove('hidden');
-
   $('#new-btn').addEventListener('click', () => startNewPuzzle());
   $('#win-new-btn').addEventListener('click', () => { $('#win-overlay').classList.add('hidden'); startNewPuzzle(); });
   $('#level-select').addEventListener('change', onLevelChange);
-
+  $('#language-select').addEventListener('change', onLanguageChange);
   startNewPuzzle();
+}
+
+function populateLanguageSelect(options) {
+  const sel = $('#language-select');
+  sel.innerHTML = '';
+  for (const lang of options) {
+    const opt = document.createElement('option');
+    opt.value = lang.dir;
+    const flag = lang.flag ? `${lang.flag} ` : '';
+    opt.textContent = `${flag}${lang.menu}`;
+    sel.appendChild(opt);
+  }
+}
+
+async function switchLanguage(langDir, startPuzzle = true) {
+  currentLanguageDir = langDir;
+  try { localStorage.setItem('tw_language_dir', langDir); } catch {}
+  showLoading('Loading language corpus…');
+
+  currentLanguageConfig = await loadLanguageConfig(langDir);
+  corpusEntries = await loadCorpus();
+  setLoading(`Building graphs (${corpusEntries.length} words)…`);
+  await nextFrame();
+  buildGraphs(corpusEntries);
+  renderKeyboard();
+  hideLoading();
+
+  if (startPuzzle) startNewPuzzle();
+}
+
+async function onLanguageChange(e) {
+  const langDir = e.target.value;
+  await switchLanguage(langDir, true);
 }
 
 function onLevelChange() {
@@ -304,6 +461,8 @@ function makeInputNode() {
     if (e.key === 'Enter') {
       e.preventDefault();
       submitWord(input.value.trim().toLowerCase());
+    } else if (e.key === 'Escape') {
+      input.blur();
     }
   });
 
@@ -322,31 +481,32 @@ function submitWord(word) {
   const input = $('#word-input');
   const hint  = $('#error-hint');
   if (!word) return;
+  const normalizedWord = normalizeForLanguage(word);
 
   clearError();
 
   const prev = chain[chain.length - 1];
 
-  if (word === prev) {
+  if (normalizedWord === prev) {
     flashError(input, hint, 'Same as previous word');
     return;
   }
 
-  if (!fullGraph.has(word)) {
+  if (!fullGraph.has(normalizedWord)) {
     flashError(input, hint, 'Not in dictionary');
     return;
   }
 
-  const op = fullGraph.classifyOp(prev, word);
+  const op = fullGraph.classifyOp(prev, normalizedWord);
   if (!op) {
     flashError(input, hint, 'Not a valid single-step transform');
     return;
   }
 
   // Valid move
-  chain.push(word);
+  chain.push(normalizedWord);
 
-  if (word === puzzle.end) {
+  if (normalizedWord === puzzle.end) {
     solved = true;
     stopTimer();
     renderChain();
@@ -355,6 +515,86 @@ function submitWord(word) {
   }
 
   renderChain();
+}
+
+function renderKeyboard() {
+  const root = $('#keyboard');
+  if (!root) return;
+  root.innerHTML = '';
+  const layout = Array.isArray(currentLanguageConfig?.layout) ? currentLanguageConfig.layout : DEFAULT_LAYOUT;
+  const actions = currentLanguageConfig?.actions || DEFAULT_ACTIONS;
+  const rtl = !!currentLanguageConfig?.rtl;
+  const lastRow = Math.max(layout.length - 1, 0);
+
+  const actionFor = (name, fallback) => ({
+    label: actions?.[name]?.label || fallback.label,
+    position: actions?.[name]?.position || fallback.position,
+    row: Number.isInteger(actions?.[name]?.row) ? actions[name].row : lastRow,
+  });
+  const enterCfg = actionFor('enter', DEFAULT_ACTIONS.enter);
+  const backCfg = actionFor('backspace', DEFAULT_ACTIONS.backspace);
+
+  for (let rowIndex = 0; rowIndex < layout.length; rowIndex++) {
+    const row = layout[rowIndex];
+    const rowEl = document.createElement('div');
+    rowEl.className = 'keyboard-row';
+
+    const maybeAddAction = (cfg, type) => {
+      if (cfg.row !== rowIndex || cfg.position === 'none') return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'key key-action';
+      btn.textContent = cfg.label;
+      if (type === 'enter') btn.addEventListener('click', submitFromKeyboard);
+      if (type === 'backspace') btn.addEventListener('click', backspaceInput);
+      rowEl.appendChild(btn);
+    };
+
+    if (enterCfg.position === 'start') maybeAddAction(enterCfg, 'enter');
+    if (backCfg.position === 'start') maybeAddAction(backCfg, 'backspace');
+
+    for (const key of row) {
+      if (!key) {
+        const spacer = document.createElement('div');
+        spacer.className = 'keyboard-spacer';
+        rowEl.appendChild(spacer);
+        continue;
+      }
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'key';
+      btn.textContent = key.toUpperCase();
+      btn.addEventListener('click', () => appendKeyToInput(key.toLowerCase(), rtl));
+      rowEl.appendChild(btn);
+    }
+
+    if (enterCfg.position === 'end') maybeAddAction(enterCfg, 'enter');
+    if (backCfg.position === 'end') maybeAddAction(backCfg, 'backspace');
+
+    root.appendChild(rowEl);
+  }
+}
+
+function appendKeyToInput(key, rtl) {
+  const input = $('#word-input');
+  if (!input || solved) return;
+  const next = rtl ? `${key}${input.value}` : `${input.value}${key}`;
+  input.value = next.toLowerCase();
+  input.focus();
+}
+
+function backspaceInput() {
+  const input = $('#word-input');
+  if (!input || solved) return;
+  const rtl = !!currentLanguageConfig?.rtl;
+  input.value = rtl ? input.value.slice(1) : input.value.slice(0, -1);
+  input.focus();
+}
+
+function submitFromKeyboard() {
+  const input = $('#word-input');
+  if (!input || solved) return;
+  submitWord(input.value.trim().toLowerCase());
 }
 
 function flashError(input, hint, msg) {

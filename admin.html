@@ -22,6 +22,14 @@
   <div id="controls" class="hidden">
 
     <section class="panel">
+      <h2>Language</h2>
+      <p class="hint">Select a language corpus to analyse, solve, and export.</p>
+      <div class="row">
+        <label>Language <select id="language-select"></select></label>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>Analyse Graph</h2>
       <p class="hint">Sample BFS from random seeds to see connectivity, components, and distance distribution.</p>
       <div class="row">
@@ -52,6 +60,18 @@
     </section>
 
     <section class="panel">
+      <h2>Find Transformable Words</h2>
+      <p class="hint">List reachable words with their shortest step count, sorted by steps.</p>
+      <div class="row">
+        <label>Word <input type="text" id="from-word" placeholder="e.g. cold"></label>
+        <label>Min steps <input type="number" id="from-min-steps" value="1" min="1" max="200"></label>
+        <label>Max steps <input type="number" id="from-max-steps" value="8" min="1" max="200"></label>
+        <label>Max results <input type="number" id="from-limit" value="200" min="10" max="2000"></label>
+        <button id="from-btn">Find</button>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>Export Puzzles</h2>
       <p class="hint">Generate a batch of puzzles and download as JSON for use in the game.</p>
       <div class="row">
@@ -66,6 +86,6 @@
 
   <div id="results"></div>
 
-  <script type="module" src="js/admin.js"></script>
+  <script type="module" src="js/admin.js?v=ml2"></script>
 </body>
 </html>

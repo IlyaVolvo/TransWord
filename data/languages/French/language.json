@@ -1,0 +1,30 @@
+{
+  "code": "fr",
+  "menu": "Français",
+  "flag": "🇫🇷",
+  "layout": [
+    ["a", "z", "e", "r", "t", "y", "u", "i", "o", "p"],
+    ["q", "s", "d", "f", "g", "h", "j", "k", "l", "m"],
+    ["w", "x", "c", "v", "b", "n"]
+  ],
+  "actions": {
+    "enter": {
+      "label": "ENTER",
+      "position": "start"
+    },
+    "backspace": {
+      "label": "⌫",
+      "position": "end"
+    }
+  },
+  "rtl": false,
+  "normalization": {
+    "àáâä": "a",
+    "èéêë": "e",
+    "ìíîï": "i",
+    "òóôöœ": "o",
+    "ùúûü": "u",
+    "ýÿ": "y",
+    "ç": "c"
+  }
+}

@@ -1,0 +1,65 @@
+[
+  {
+    "dir": "German",
+    "code": "de",
+    "menu": "Deutsch",
+    "flag": "🇩🇪",
+    "words": 0,
+    "sourceWords": 0,
+    "generatedPlurals": 0
+  },
+  {
+    "dir": "English",
+    "code": "en",
+    "menu": "English",
+    "flag": "🇺🇸",
+    "words": 46504,
+    "sourceWords": 26126,
+    "generatedPlurals": 20378
+  },
+  {
+    "dir": "Spanish",
+    "code": "es",
+    "menu": "Español",
+    "flag": "🇪🇸",
+    "words": 16387,
+    "sourceWords": 8431,
+    "generatedPlurals": 7956
+  },
+  {
+    "dir": "French",
+    "code": "fr",
+    "menu": "Français",
+    "flag": "🇫🇷",
+    "words": 49478,
+    "sourceWords": 33244,
+    "generatedPlurals": 16234
+  },
+  {
+    "dir": "Russian",
+    "code": "ru",
+    "menu": "Русский",
+    "flag": "🇷🇺",
+    "words": 21628,
+    "sourceWords": 10854,
+    "generatedPlurals": 10774
+  },
+  {
+    "dir": "Armenian",
+    "code": "hy",
+    "menu": "Հայերեն",
+    "flag": "🇦🇲",
+    "words": 19238,
+    "sourceWords": 9619,
+    "generatedPlurals": 9619
+  },
+  {
+    "dir": "Hebrew",
+    "code": "he",
+    "menu": "עברית",
+    "flag": "🇮🇱",
+    "words": 25140,
+    "sourceWords": 8419,
+    "generatedPlurals": 16721
+  }
+]

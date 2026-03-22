@@ -1,0 +1,27 @@
+{
+  "code": "de",
+  "menu": "Deutsch",
+  "flag": "🇩🇪",
+  "layout": [
+    ["q", "w", "e", "r", "t", "z", "u", "i", "o", "p"],
+    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+    ["y", "x", "c", "v", "b", "n", "m"]
+  ],
+  "actions": {
+    "enter": {
+      "label": "ENTER",
+      "position": "start"
+    },
+    "backspace": {
+      "label": "⌫",
+      "position": "end"
+    }
+  },
+  "rtl": false,
+  "normalization": {
+    "ä": "a",
+    "ö": "o",
+    "ü": "u",
+    "ß": "ss"
+  }
+}

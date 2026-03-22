@@ -1,0 +1,29 @@
+{
+  "code": "es",
+  "menu": "Español",
+  "flag": "🇪🇸",
+  "layout": [
+    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+    ["a", "s", "d", "f", "g", "h", "j", "k", "l", "ñ"],
+    ["z", "x", "c", "v", "b", "n", "m"]
+  ],
+  "actions": {
+    "enter": {
+      "label": "ENTER",
+      "position": "start"
+    },
+    "backspace": {
+      "label": "⌫",
+      "position": "end"
+    }
+  },
+  "rtl": false,
+  "normalization": {
+    "á": "a",
+    "é": "e",
+    "í": "i",
+    "ó": "o",
+    "úü": "u",
+    "ñ": "n"
+  }
+}
